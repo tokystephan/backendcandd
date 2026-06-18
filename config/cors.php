@@ -19,9 +19,9 @@ return [
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')),
+    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,https://gestioncandd.netlify.app,https://*.netlify.app')),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [ '/^https:\/\/.*\.netlify\.app$/',],
 
     'allowed_headers' => ['accept', 'accept-language', 'authorization', 'content-language', 'content-type', 'X-requested-with', 'origin', 'X-csrf-token', 'X-xsrf-token', 'withcredentials'],
 
