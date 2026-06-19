@@ -24,7 +24,6 @@ use Illuminate\Support\Facades\Route;
 | Rôles disponibles:
 | - role_id 1: Admin (accès total, pas de département)
 | - role_id 2: Assistant RH (pas de département)
-| - role_id 3: Consultant (département REQUIS)
 | - role_id 4: Manager (département REQUIS)
 | - role_id 5: Direction (pas de département, lecture seule)
 |
@@ -112,20 +111,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/candidates/{id}/force', [CandidateController::class, 'forceDelete']);
 });
 
-    // ========== ROUTES CONSULTANT (role_id = 3) ==========
-    Route::middleware('role:3')->prefix('consultant')->group(function () {
-        Route::get('/dashboard', [ConsultantDashboardController::class, 'getDashboard']);
-        Route::get('/posts', [ConsultantDashboardController::class, 'getPosts']);
-        Route::get('/candidates-to-evaluate', [ConsultantDashboardController::class, 'getCandidatesToEvaluate']);
-        Route::get('/events', [ConsultantDashboardController::class, 'getEvents']);
-        Route::get('/interviews', [ConsultantDashboardController::class, 'getInterviews']);
-        Route::get('/performance', [ConsultantDashboardController::class, 'getPerformance']);
-        Route::post('/evaluate/{applicationId}', [ConsultantDashboardController::class, 'submitEvaluation']);
-        Route::post('/interviews/{interviewId}/respond', [ConsultantDashboardController::class, 'respondToInterview']);
-    });
-
-    // ========== ROUTES MANAGER (role_id = 4) ==========
-    Route::middleware('role:4')->prefix('manager')->group(function () {
+    // ========== ROUTES MANAGER (role_id = 4, ancien role_id 3 accepté pendant la migration) ==========
+    Route::middleware('role:3,4')->prefix('manager')->group(function () {
         Route::get('/dashboard', [ConsultantDashboardController::class, 'getDashboard']);
         Route::get('/posts', [ConsultantDashboardController::class, 'getPosts']);
         Route::get('/candidates-to-evaluate', [ConsultantDashboardController::class, 'getCandidatesToEvaluate']);
@@ -174,7 +161,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('posts/{id}/skills/{skillId}', [PostController::class, 'removeSkill']);
     });
 
-    // ========== ROUTES ÉVÉNEMENTS (Admin, Assistant, Consultant, Manager, Direction lecture) ==========
+    // ========== ROUTES ÉVÉNEMENTS (Admin, Assistant, Manager, Direction lecture) ==========
     Route::middleware('role:1,2,3,4,5')->group(function () {
         Route::apiResource('events', EventController::class);
         Route::patch('events/{event}/status', [EventController::class, 'updateStatus']);

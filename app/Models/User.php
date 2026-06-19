@@ -86,7 +86,7 @@ class User extends Authenticatable
         $roleMapping = [
             1 => 'admin',
             2 => 'assistant',
-            3 => 'consultant',
+            3 => 'manager',
             4 => 'manager',
             5 => 'direction',
         ];
@@ -126,12 +126,12 @@ class User extends Authenticatable
     
     public function isConsultant(): bool
     {
-        return $this->role_id === 3;
+        return in_array((int) $this->role_id, [3, 4], true);
     }
     
     public function isManager(): bool
     {
-        return $this->role_id === 4;
+        return in_array((int) $this->role_id, [3, 4], true);
     }
     
     public function isDirection(): bool
@@ -144,7 +144,7 @@ class User extends Authenticatable
      */
     public function requiresDepartment(): bool
     {
-        return in_array($this->role_id, [3, 4]); // Consultant ou Manager
+        return in_array((int) $this->role_id, [3, 4], true);
     }
     
     /**
@@ -198,7 +198,6 @@ class User extends Authenticatable
         $routes = [
             'admin' => '/dashboard/admin',
             'assistant' => '/dashboard/assistant',
-            'consultant' => '/dashboard/consultant',
             'manager' => '/dashboard/manager',
             'direction' => '/dashboard/direction',
         ];

@@ -46,7 +46,7 @@ class AuthController extends Controller
             }
 
             // ✅ AUTORISER LES RÔLES OUVERTS À L'INSCRIPTION
-            $allowedPublicRoles = ['assistant', 'assistant rh', 'consultant', 'manager', 'direction'];
+            $allowedPublicRoles = ['assistant', 'assistant rh', 'manager', 'direction'];
             if (!in_array($requestedRole, $allowedPublicRoles, true)) {
                 return response()->json([
                     'message' => 'Rôle invalide',
@@ -140,7 +140,7 @@ class AuthController extends Controller
         $roleMapping = [
             1 => 'admin',
             2 => 'assistant',
-            3 => 'consultant',
+            3 => 'manager',
             4 => 'manager',
             5 => 'direction',
         ];
@@ -199,9 +199,8 @@ class AuthController extends Controller
                 ], 403);
             }
 
-            // ✅ Le manager peut se connecter sans département pour voir un dashboard vide.
-            // Le consultant garde l'obligation stricte de département.
-            $requiresDepartment = $user->role_id === 3;
+            // Le manager peut se connecter sans département pour voir un dashboard vide.
+            $requiresDepartment = false;
             
             if ($requiresDepartment) {
                 if (is_null($user->department_id)) {
@@ -381,7 +380,7 @@ class AuthController extends Controller
                 ], 401);
             }
             
-            $requiresDepartment = in_array($user->role_id, [3, 4]);
+            $requiresDepartment = $user->role_id === 4;
             $hasValidDepartment = false;
             $department = null;
             $message = null;

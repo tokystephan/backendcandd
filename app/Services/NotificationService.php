@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Schema;
  * 
  * ADMIN RH: Toutes les notifications
  * ASSISTANT RH: Notifications opérationnelles
- * MANAGER/CONSULTANT: Notifications de son département
+ * MANAGER: Notifications de son département
  * DIRECTION: Notifications stratégiques
  */
 class NotificationService
@@ -27,7 +27,6 @@ class NotificationService
     const ROLE_ADMIN = 'admin';
     const ROLE_ASSISTANT = 'assistant';
     const ROLE_MANAGER = 'manager';
-    const ROLE_CONSULTANT = 'consultant';
     const ROLE_DIRECTION = 'direction';
 
     // Types de notifications
@@ -512,12 +511,11 @@ class NotificationService
                 'channel' => ['notification', 'email'],
             ];
 
-            // Participants managers/consultants.
+            // Participants managers.
             if ($event->participants && $event->participants->count() > 0) {
                 $participantIds = $event->participants->pluck('user_id')->toArray();
                 $managerParticipantIds = self::filterUserIdsByRoles($participantIds, [
                     self::ROLE_MANAGER,
-                    self::ROLE_CONSULTANT,
                 ]);
                 self::createForUsers($managerParticipantIds, $message, 'warning', $data);
             }
@@ -682,7 +680,6 @@ class NotificationService
             self::ROLE_ADMIN => ['admin', 'responsable rh'],
             self::ROLE_ASSISTANT => ['assistant', 'assistant rh'],
             self::ROLE_MANAGER => ['manager', 'consultant'],
-            self::ROLE_CONSULTANT => ['consultant', 'manager'],
             self::ROLE_DIRECTION => ['direction', 'directeur', 'directeur rh'],
         ];
 

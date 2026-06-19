@@ -40,16 +40,16 @@ class ConsultantDashboardController extends Controller
         ]);
 
         // ✅ CORRECTION #1: Vérifier aussi par role_id
-        if (!$this->hasRole($user, ['consultant', 'admin', 'manager'])) {
+        if (!$this->hasRole($user, ['admin', 'manager'])) {
             return response()->json([
                 'message' => 'Accès refusé. Rôle insuffisant.',
                 'debug' => [
-                    'expected_roles' => ['consultant', 'admin', 'manager'],
+                    'expected_roles' => ['admin', 'manager'],
                     'user_role' => $user->role ?? 'NULL',
                     'user_role_id' => $user->role_id ?? 'NULL',
                     'user_id' => $user->id,
                     'user_email' => $user->email,
-                    'solution' => 'Assurez-vous que role_id = 3 dans la table users'
+                    'solution' => 'Assurez-vous que role_id = 4 dans la table users'
                 ]
             ], 403);
         }
@@ -104,7 +104,7 @@ public function getPosts()
     try {
         $user = Auth::user();
         
-        if (!$this->hasRole($user, ['consultant', 'admin', 'manager'])) {
+        if (!$this->hasRole($user, ['admin', 'manager'])) {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
@@ -171,7 +171,7 @@ public function getPosts()
         $user = Auth::user();
         
         // ✅ CORRECTION #3: Vérification unifiée
-        if (!$this->hasRole($user, ['consultant', 'admin', 'manager'])) {
+        if (!$this->hasRole($user, ['admin', 'manager'])) {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
@@ -247,7 +247,7 @@ public function getPosts()
         $user = Auth::user();
         
         // ✅ CORRECTION #4: Vérification unifiée
-        if (!$this->hasRole($user, ['consultant', 'admin', 'manager'])) {
+        if (!$this->hasRole($user, ['admin', 'manager'])) {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
@@ -283,7 +283,7 @@ public function getPosts()
         $user = Auth::user();
         
         // ✅ CORRECTION #5: Vérification unifiée
-        if (!$this->hasRole($user, ['consultant', 'admin', 'manager'])) {
+        if (!$this->hasRole($user, ['admin', 'manager'])) {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
@@ -332,7 +332,7 @@ public function getPosts()
         $user = Auth::user();
         
         // ✅ CORRECTION #6: Vérification unifiée
-        if (!$this->hasRole($user, ['consultant', 'admin', 'manager'])) {
+        if (!$this->hasRole($user, ['admin', 'manager'])) {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
@@ -377,14 +377,14 @@ public function getPosts()
                 'application_id' => $application->id,
                 'candidate_id' => $application->candidate_id,
                 'event_type' => 'autre',
-                'title' => 'Évaluation consultant',
+                'title' => 'Évaluation manager',
                 'status' => 'termine',
                 'start_datetime' => now(),
                 'end_datetime' => now()->addHour(),
                 'location_type' => 'presentiel',
                 'location' => 'Bureau',
                 'created_by' => $user->id,
-                'description' => 'Évaluation effectuée par consultant'
+                'description' => 'Évaluation effectuée par manager'
             ]);
         }
 
@@ -418,7 +418,7 @@ public function getPosts()
                     'application_id' => $application->id,
                     'status' => $nextStatusName,
                     'changed_by' => $user->id,
-                    'notes' => "Évaluation consultant: {$validated['recommendation']}"
+                    'notes' => "Évaluation manager: {$validated['recommendation']}"
                 ]);
             }
         }
@@ -438,7 +438,7 @@ public function getPosts()
         $user = Auth::user();
         
         // ✅ CORRECTION #7: Vérification unifiée
-        if (!$this->hasRole($user, ['consultant', 'admin', 'manager'])) {
+        if (!$this->hasRole($user, ['admin', 'manager'])) {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
@@ -495,7 +495,7 @@ public function getPosts()
         $user = Auth::user();
         
         // ✅ CORRECTION #8: Vérification unifiée
-        if (!$this->hasRole($user, ['consultant', 'admin', 'manager'])) {
+        if (!$this->hasRole($user, ['admin', 'manager'])) {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
@@ -722,7 +722,7 @@ public function getPosts()
             $roleIdToName = [
                 1 => 'admin',
                 2 => 'assistant',
-                3 => 'consultant',
+                3 => 'manager',
                 4 => 'manager',
                 5 => 'direction',
             ];
@@ -747,6 +747,7 @@ public function getPosts()
             'assistant rh' => 'assistant',
             'directeur rh' => 'direction',
             'directeur' => 'direction',
+            'consultant' => 'manager',
         ];
         
         $normalized = $aliases[$role] ?? $role;
@@ -775,7 +776,7 @@ public function getPosts()
 
     private function managerNeedsDepartment($user): bool
     {
-        return (int) ($user->role_id ?? 0) === 4 && !$this->userHasDepartment($user);
+        return in_array((int) ($user->role_id ?? 0), [3, 4], true) && !$this->userHasDepartment($user);
     }
 
     private function emptyManagerPayload(): array

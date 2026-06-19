@@ -26,8 +26,7 @@ class CreateEventsTable extends Migration
             $table->enum('status', ['planifie', 'confirme', 'annule', 'reporte', 'termine'])->default('planifie');
             $table->text('cancellation_reason')->nullable();
             $table->foreignId('rescheduled_from')->nullable()->constrained('events');
-            $table->foreignId('created_by')->constrained('users');
-            $table->onDelete('cascade');
+            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();
 
             $table->index(['start_datetime', 'end_datetime']);

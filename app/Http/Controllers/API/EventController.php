@@ -29,7 +29,7 @@ class EventController extends Controller
         $roleMapping = [
             1 => 'admin',
             2 => 'assistant',
-            3 => 'consultant',
+            3 => 'manager',
             4 => 'manager',
             5 => 'direction',
         ];
@@ -80,8 +80,8 @@ class EventController extends Controller
             return true;
         }
         
-        // Consultant / Manager: seulement s'il est participant
-        if (in_array($roleName, ['consultant', 'manager'], true)) {
+        // Manager: seulement s'il est participant
+        if ($roleName === 'manager') {
             return $event->participants()->where('user_id', $user->id)->exists();
         }
         
@@ -103,7 +103,7 @@ class EventController extends Controller
             return true;
         }
         
-        if (in_array($roleName, ['consultant', 'manager'], true)) {
+        if ($roleName === 'manager') {
             return $this->isParticipant($event, $user->id);
         }
         
@@ -152,7 +152,7 @@ class EventController extends Controller
             $roleName = $this->getRoleName($user);
             
             // ✅ CORRECTION 7: Inclure 'manager' dans les rôles autorisés
-            if (!in_array($roleName, ['admin', 'assistant', 'consultant', 'manager', 'direction'], true)) {
+            if (!in_array($roleName, ['admin', 'assistant', 'manager', 'direction'], true)) {
                 Log::warning('EventController.index: Rôle non autorisé', [
                     'user_id' => $user->id,
                     'role_name' => $roleName
@@ -165,8 +165,8 @@ class EventController extends Controller
                 ], 403);
             }
 
-            // Consultants: voir seulement leurs événements
-            if ($roleName === 'consultant') {
+            // Manager: voir seulement ses événements
+            if ($roleName === 'manager') {
                 $query->whereHas('participants', function ($participantQuery) use ($user) {
                     $participantQuery->where('user_id', $user->id);
                 });
@@ -409,11 +409,11 @@ class EventController extends Controller
             return response()->json(['success' => false, 'message' => 'Non authentifié'], 401);
         }
 
-        // Seuls Admin/Assistant ou un Consultant participant peuvent écrire
+        // Seuls Admin/Assistant ou un manager participant peuvent écrire
         $roleName = $this->getRoleName($user);
-        $isConsultantParticipant = $roleName === 'consultant' && $this->isParticipant($event, $user->id);
+        $isManagerParticipant = $roleName === 'manager' && $this->isParticipant($event, $user->id);
 
-        if (!($this->hasAnyRole($user, ['admin', 'assistant']) || $isConsultantParticipant)) {
+        if (!($this->hasAnyRole($user, ['admin', 'assistant']) || $isManagerParticipant)) {
             return response()->json(['success' => false, 'message' => 'Accès refusé pour ajouter un compte-rendu.'], 403);
         }
 

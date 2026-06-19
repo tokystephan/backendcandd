@@ -25,7 +25,7 @@ class Role extends Model
         $mapping = [
             1 => 'admin',
             2 => 'assistant',
-            3 => 'consultant',
+            3 => 'manager',
             4 => 'manager',
             5 => 'direction',
         ];

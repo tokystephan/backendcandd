@@ -37,12 +37,12 @@ class Department extends Model
     }
 
     /**
-     * ✅ CORRECTION : Relation avec les consultants (role_id=3) et managers (role_id=4)
+     * Relation avec les managers du département.
      * Utiliser role_id au lieu de 'role' (colonne textuelle)
      */
     public function consultants()
     {
-        return $this->users()->whereIn('role_id', [3, 4]); // 3=Consultant, 4=Manager
+        return $this->users()->whereIn('role_id', [3, 4]);
     }
 
     /**
@@ -106,7 +106,7 @@ class Department extends Model
     }
 
     /**
-     * Compter les consultants du département (role_id=3 et 4)
+     * Compter les managers du département.
      */
     public function getConsultantsCountAttribute()
     {

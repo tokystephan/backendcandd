@@ -88,24 +88,7 @@ class CheckRole
         }
         
         // ========== 6. VÉRIFICATION DÉPARTEMENT ==========
-        // Le manager doit pouvoir ouvrir son dashboard même sans département:
-        // les contrôleurs renvoient alors des données vides et un état à afficher.
-        if ($user->role_id === 3 && !$this->hasDepartment($user)) {
-            Log::warning('CheckRole: Consultant sans département', [
-                'user_id' => $user->id,
-                'email' => $user->email
-            ]);
-            
-            // On retourne 200 mais avec un warning pour que le dashboard affiche un message
-            return response()->json([
-                'success' => false,
-                'warning' => true,
-                'message' => 'Aucun département assigné à votre compte consultant. Veuillez contacter l\'administrateur.',
-                'code' => 'NO_DEPARTMENT'
-            ], 403);
-        }
-        
-        // ========== 7. ACCÈS AUTORISÉ ==========
+        // ========== 6. ACCÈS AUTORISÉ ==========
         return $next($request);
     }
     
@@ -120,7 +103,7 @@ class CheckRole
         $roleMapping = [
             'admin' => 1,
             'assistant' => 2,
-            'consultant' => 3,
+            'consultant' => 4,
             'manager' => 4,
             'direction' => 5,
         ];
@@ -160,7 +143,7 @@ class CheckRole
         $roleMapping = [
             1 => 'admin',
             2 => 'assistant',
-            3 => 'consultant',
+            3 => 'manager',
             4 => 'manager',
             5 => 'direction',
         ];

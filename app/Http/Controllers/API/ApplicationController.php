@@ -64,7 +64,7 @@ class ApplicationController extends Controller
     {
         $user = auth()->user();
         if ($this->isConsultant($user)) {
-            return response()->json(['message' => 'Les consultants ne peuvent pas créer de candidature.'], 403);
+            return response()->json(['message' => 'Les managers ne peuvent pas créer de candidature.'], 403);
         }
 
         $data = $this->validatedData($request);
@@ -103,7 +103,7 @@ class ApplicationController extends Controller
     {
         $user = auth()->user();
         if ($this->isConsultant($user)) {
-            return response()->json(['message' => 'Les consultants ne peuvent pas modifier une candidature.'], 403);
+            return response()->json(['message' => 'Les managers ne peuvent pas modifier une candidature.'], 403);
         }
 
         $application = Application::findOrFail($id);
@@ -160,7 +160,7 @@ class ApplicationController extends Controller
     {
         $user = auth()->user();
         if ($this->isConsultant($user)) {
-            return response()->json(['message' => 'Les consultants ne peuvent pas supprimer une candidature.'], 403);
+            return response()->json(['message' => 'Les managers ne peuvent pas supprimer une candidature.'], 403);
         }
 
         Application::findOrFail($id)->delete();
@@ -469,11 +469,15 @@ class ApplicationController extends Controller
     private function isConsultant($user): bool
     {
         if (!$user) return false;
+
+        if (in_array((int) ($user->role_id ?? 0), [3, 4], true)) {
+            return true;
+        }
         
         $role = $user->role;
-        $roleName = is_object($role) ? $role->name : $role;
-        $normalized = strtolower((string) $roleName);
+        $roleName = is_object($role) ? ($role->slug ?? $role->name ?? '') : $role;
+        $normalized = strtolower(trim((string) $roleName));
 
-        return in_array($normalized, ['consultant', 'manager'], true);
+        return in_array($normalized, ['manager', 'consultant'], true);
     }
 }

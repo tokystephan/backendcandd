@@ -62,7 +62,7 @@ class UserController extends Controller
     public function participants(Request $request)
     {
         try {
-            $allowedRoleNames = ['Admin', 'Assistant', 'Manager', 'Direction', 'Consultant', 'Recruteur', 'RH'];
+            $allowedRoleNames = ['Admin', 'Assistant', 'Manager', 'Direction', 'Recruteur', 'RH'];
             $roleIds = Role::whereIn('name', $allowedRoleNames)->pluck('id')->toArray();
 
             $users = User::whereIn('role_id', $roleIds)

@@ -191,8 +191,8 @@ class AdminController extends Controller
             'password'   => 'required|string|min:6|confirmed',
         ];
 
-        // ✅ ÉTAPE 1/2 : Si consultant/manager => department_id requis et doit exister
-        if (in_array(strtolower((string) $roleName), ['consultant', 'manager'], true)) {
+        // Si manager => department_id requis et doit exister
+        if (strtolower((string) $roleName) === 'manager') {
             $validatorRules['department_id'] = 'required|exists:departments,id';
         }
 
@@ -218,8 +218,8 @@ class AdminController extends Controller
             'password'   => Hash::make($request->password),
         ];
 
-        // ✅ ÉTAPE 1 : Sauvegarde department_id si consultant/manager
-        if (in_array(strtolower((string) $roleName), ['consultant', 'manager'], true)) {
+        // Sauvegarde department_id si manager
+        if (strtolower((string) $roleName) === 'manager') {
             $createData['department_id'] = $request->department_id;
         }
 
@@ -250,7 +250,7 @@ class AdminController extends Controller
             'approval_status' => 'sometimes|in:pending,approved,rejected',
         ];
 
-        if (in_array(strtolower((string) $roleName), ['consultant', 'manager'], true)) {
+        if (strtolower((string) $roleName) === 'manager') {
             // optionnel sur update, mais si fourni doit exister
             $validatorRules['department_id'] = 'sometimes|exists:departments,id';
         }
@@ -284,10 +284,10 @@ class AdminController extends Controller
         $oldApprovalStatus = $user->approval_status;
         $updateFields = $request->only(['first_name', 'last_name', 'email', 'role_id', 'is_active', 'approval_status']);
 
-        // ✅ department_id si consultant/manager
-        if (in_array(strtolower((string) $roleName), ['consultant', 'manager'], true) && $request->has('department_id')) {
+        // department_id si manager
+        if (strtolower((string) $roleName) === 'manager' && $request->has('department_id')) {
             $updateFields['department_id'] = $request->department_id;
-        } elseif (!in_array(strtolower((string) $roleName), ['consultant', 'manager'], true)) {
+        } elseif (strtolower((string) $roleName) !== 'manager') {
             $updateFields['department_id'] = null;
         }
 
