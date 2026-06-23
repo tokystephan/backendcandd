@@ -15,21 +15,25 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'storage/*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout', 'storage/*', '*'],
 
-    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    'allowed_methods' => ['*'],
 
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')),
-
+    'allowed_origins' =>  [
+         'https://frontendtoky.vercel.app',
+        'https://frontendtoky-nine.vercel.app',
+        'http://localhost:3000',
+        'http://localhost:5173',
+    ],
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['accept', 'accept-language', 'authorization', 'content-language', 'content-type', 'X-requested-with', 'origin', 'X-csrf-token', 'X-xsrf-token', 'withcredentials'],
+    'allowed_headers' => ['*'],
 
-    'exposed_headers' => ['cache-control', 'content-language', 'content-type', 'Last-Modified', 'Pragma', 'Expires', 'Authorization'],
+    'exposed_headers' => [],
 
 
     'max_age' =>  86400,// 24 hours
 
-    'supports_credentials' => true,
+    'supports_credentials' => false,
 
 ];
