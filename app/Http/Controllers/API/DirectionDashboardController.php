@@ -278,27 +278,13 @@ class DirectionDashboardController extends Controller
                 ->groupBy('sources.id', 'sources.name')
                 ->get();
 
-            // Tendance mensuelle
-            $monthlyTrend = collect(range(0, 11))->map(function ($i) use ($period) {
-                $date = now()->subMonths($i);
-                if ($period === 'quarter') {
-                    $query = Application::whereYear('created_at', $date->year)
-                        ->whereMonth('created_at', $date->month);
-                } elseif ($period === 'year') {
-                    $query = Application::whereYear('created_at', $date->year);
-                } else {
-                    $query = Application::whereYear('created_at', $date->year)
-                        ->whereMonth('created_at', $date->month);
-                }
-                return [
-                    'month' => $date->format('Y-m'),
-                    'month_name' => $date->format('M Y'),
-                    'count' => $query->count(),
-                ];
-            })->reverse()->values();
+            // Tendance utilisée par le graphe: candidatures + recrutements acceptés.
+            $monthlyTrend = $this->buildRecruitmentTrend($period);
 
             // Taux de conversion
-            $acceptedCount = Application::where('current_status_id', 5)->count();
+            $acceptedCount = Application::whereHas('currentStatus', function ($q) {
+                $q->whereIn('name', ['Accepté', 'Acceptée', 'Acceptées']);
+            })->count();
             $successRate = $totalApplications > 0 ? round(($acceptedCount / $totalApplications) * 100, 2) : 0;
 
             // Postes ouverts
@@ -314,6 +300,7 @@ class DirectionDashboardController extends Controller
                 'success' => true,
                 'totalApplications' => $totalApplications,
                 'totalApplicationsPeriod' => $totalApplicationsPeriod,
+                'totalRecruitments' => $acceptedCount,
                 'pending' => Application::whereIn('current_status_id', [1, 2])->count(),
                 'successRate' => $successRate,
                 'openPosts' => $openPosts,
@@ -346,7 +333,8 @@ class DirectionDashboardController extends Controller
 
             // Récupérer les données à exporter
             if ($type === 'applications') {
-                $data = Application::with(['post', 'candidate', 'currentStatus'])
+                $headers = ['ID', 'Candidat', 'Poste', 'Département', 'Statut', 'Créé le', 'Modifié le'];
+                $data = Application::with(['post.department', 'candidate', 'currentStatus'])
                     ->get()
                     ->map(function ($app) {
                         return [
@@ -362,11 +350,10 @@ class DirectionDashboardController extends Controller
 
                 // Créer le CSV
                 $csv = fopen('php://memory', 'r+');
-                if (!empty($data)) {
-                    fputcsv($csv, array_keys($data[0]->toArray()), ';');
-                    foreach ($data as $row) {
-                        fputcsv($csv, $row->toArray(), ';');
-                    }
+                fwrite($csv, "\xEF\xBB\xBF");
+                fputcsv($csv, $headers, ';');
+                foreach ($data as $row) {
+                    fputcsv($csv, $row, ';');
                 }
                 rewind($csv);
                 $content = stream_get_contents($csv);
@@ -387,6 +374,78 @@ class DirectionDashboardController extends Controller
                 'message' => 'Erreur lors de l\'export'
             ], 500);
         }
+    }
+
+    private function buildRecruitmentTrend(string $period)
+    {
+        $acceptedStatusNames = ['Accepté', 'Acceptée', 'Acceptées'];
+        $now = now();
+
+        if ($period === 'year') {
+            return collect(range(4, 0))->map(function ($i) use ($acceptedStatusNames, $now) {
+                $year = $now->copy()->subYears($i)->year;
+
+                return [
+                    'month' => (string) $year,
+                    'month_name' => (string) $year,
+                    'applications' => Application::whereYear('created_at', $year)->count(),
+                    'recruitments' => Application::whereYear('created_at', $year)
+                        ->whereHas('currentStatus', function ($q) use ($acceptedStatusNames) {
+                            $q->whereIn('name', $acceptedStatusNames);
+                        })
+                        ->count(),
+                ];
+            })->values();
+        }
+
+        if ($period === 'quarter') {
+            $currentQuarter = (int) ceil($now->month / 3);
+
+            return collect(range(3, 0))->map(function ($i) use ($acceptedStatusNames, $now, $currentQuarter) {
+                $quarter = $currentQuarter - $i;
+                $year = $now->year;
+
+                while ($quarter <= 0) {
+                    $quarter += 4;
+                    $year--;
+                }
+
+                $startMonth = (($quarter - 1) * 3) + 1;
+                $endMonth = $startMonth + 2;
+
+                $applicationsQuery = Application::whereYear('created_at', $year)
+                    ->whereMonth('created_at', '>=', $startMonth)
+                    ->whereMonth('created_at', '<=', $endMonth);
+
+                return [
+                    'month' => "T{$quarter} {$year}",
+                    'month_name' => "T{$quarter} {$year}",
+                    'applications' => (clone $applicationsQuery)->count(),
+                    'recruitments' => (clone $applicationsQuery)
+                        ->whereHas('currentStatus', function ($q) use ($acceptedStatusNames) {
+                            $q->whereIn('name', $acceptedStatusNames);
+                        })
+                        ->count(),
+                ];
+            })->values();
+        }
+
+        return collect(range(11, 0))->map(function ($i) use ($acceptedStatusNames, $now) {
+            $date = $now->copy()->subMonths($i);
+            $applicationsQuery = Application::whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month);
+
+            return [
+                'month' => $date->format('Y-m'),
+                'month_name' => $date->format('M Y'),
+                'applications' => (clone $applicationsQuery)->count(),
+                'recruitments' => (clone $applicationsQuery)
+                    ->whereHas('currentStatus', function ($q) use ($acceptedStatusNames) {
+                        $q->whereIn('name', $acceptedStatusNames);
+                    })
+                    ->count(),
+            ];
+        })->values();
     }
 
     /**

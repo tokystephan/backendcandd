@@ -15,8 +15,6 @@
     RewriteRule ^ %1 [L,R=301]
 
     # Send Requests To Front Controller...
-    # IMPORTANT: don't route Vite module requests to PHP.
-    RewriteCond %{REQUEST_URI} !^/src/ [NC]
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]

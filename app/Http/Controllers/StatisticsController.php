@@ -8,8 +8,12 @@ use App\Models\Event;
 use App\Models\Source;
 use App\Models\Department;
 use App\Models\User;
+use App\Models\Candidate;
+use App\Models\Status;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Log;
 
 class StatisticsController extends Controller
 {
@@ -149,8 +153,126 @@ class StatisticsController extends Controller
         
         return response()->json($recruiters);
     }
+
+    // ============================================================
+    // ✅ NOUVELLE MÉTHODE : EXPORT DES STATISTIQUES EN CSV
+    // ============================================================
     
-    // ========== MÉTHODES PRIVÉES (logique métier) ==========
+    /**
+     * Exporter les statistiques au format CSV
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     */
+    public function export(Request $request)
+    {
+        try {
+            // 1. Validation des paramètres
+            $validated = $request->validate([
+                'type' => 'required|in:applications,recruitments',
+                'period' => 'required|in:month,quarter,year',
+                'format' => 'required|in:csv'
+            ]);
+
+            // 2. Construction de la requête de base
+            $query = Application::query()
+                ->join('candidates', 'applications.candidate_id', '=', 'candidates.id')
+                ->join('posts', 'applications.post_id', '=', 'posts.id')
+                ->join('statuses', 'applications.current_status_id', '=', 'statuses.id')
+                ->join('departments', 'posts.department_id', '=', 'departments.id')
+                ->select(
+                    'candidates.first_name',
+                    'candidates.last_name',
+                    'candidates.email',
+                    'candidates.phone',
+                    'posts.title as poste',
+                    'departments.name as departement',
+                    'statuses.name as statut',
+                    'applications.application_date',
+                    'applications.created_at as date_enregistrement'
+                );
+
+            // 3. Filtrage selon la période
+            if ($validated['period'] === 'month') {
+                $query->whereMonth('applications.created_at', now()->month)
+                      ->whereYear('applications.created_at', now()->year);
+            } elseif ($validated['period'] === 'quarter') {
+                $query->whereBetween('applications.created_at', [
+                    now()->startOfQuarter(),
+                    now()->endOfQuarter()
+                ]);
+            }
+            // 'year' : pas de filtre (toutes les données)
+
+            // 4. Si type = 'recruitments', on filtre sur les candidatures acceptées
+            if ($validated['type'] === 'recruitments') {
+                $query->where('statuses.name', 'Acceptée');
+            }
+
+            $rows = $query->get();
+
+            // 5. Construction du CSV
+            $headers = [
+                'Prénom', 
+                'Nom', 
+                'Email', 
+                'Téléphone',
+                'Poste', 
+                'Département',
+                'Statut', 
+                'Date candidature',
+                'Date enregistrement'
+            ];
+            $csvData = [$headers];
+
+            foreach ($rows as $row) {
+                $csvData[] = [
+                    $row->first_name ?? '',
+                    $row->last_name ?? '',
+                    $row->email ?? '',
+                    $row->phone ?? '',
+                    $row->poste ?? '',
+                    $row->departement ?? '',
+                    $row->statut ?? '',
+                    $row->application_date ?? '',
+                    $row->date_enregistrement ?? '',
+                ];
+            }
+
+            // 6. Génération du fichier CSV en flux
+            $callback = function() use ($csvData) {
+                $handle = fopen('php://output', 'w');
+                // BOM pour Excel (UTF-8)
+                fputs($handle, "\xEF\xBB\xBF");
+                foreach ($csvData as $row) {
+                    fputcsv($handle, $row, ';');
+                }
+                fclose($handle);
+            };
+
+            // 7. Retourner le fichier en téléchargement
+            return Response::stream($callback, 200, [
+                'Content-Type' => 'text/csv; charset=utf-8',
+                'Content-Disposition' => 'attachment; filename="rapport_direction_' . date('Y-m-d') . '.csv"',
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Paramètres invalides',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Export error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            return response()->json([
+                'message' => 'Erreur interne lors de l\'export',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ============================================================
+    // MÉTHODES PRIVÉES (logique métier)
+    // ============================================================
     
     /**
      * Répartition des candidatures par statut
